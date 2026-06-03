@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "AR Hayvan Ansiklopedisi",
+    "slug": "ar-hayvan-ansiklopedisi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.borahacikoylu.arhayvanansiklopedisi",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AR deneyimi için kamera erişimi gereklidir.",
+        "NSMicrophoneUsageDescription": "Bazı AR özellikleri için mikrofon gerekebilir."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.borahacikoylu.arhayvanansiklopedisi",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Bazı AR özellikleri için mikrofon gerekebilir."
+        }
+      ]
+    ],
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "479d2034-0cbd-4390-8e44-71e70cb3c06c"
+      }
+    },
+    "owner": "borahckyl"
+  }
+}

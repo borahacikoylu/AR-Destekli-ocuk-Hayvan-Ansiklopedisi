@@ -1,0 +1,114 @@
+/**
+ * Hayvan veritabanı
+ *
+ * Her hayvan için:
+ *   - targetImage: assets/targets/ klasöründeki PDF sayfa fotoğrafı
+ *   - model: assets/models/ klasöründeki .glb 3D model
+ *   - sound: assets/sounds/ klasöründeki .mp3 ses dosyası
+ *   - physicalWidth: Hedef görüntünün gerçek genişliği (metre cinsinden)
+ *     A5 sayfa = 0.148, A4 sayfa = 0.21
+ *
+ * Dosyaları koyma rehberi → SETUP.md
+ */
+
+export const ANIMALS = [
+  {
+    id: 'aslan',
+    name: 'Aslan',
+    englishName: 'Lion',
+    emoji: '🦁',
+    pageNumber: 1,
+    color: '#f5a623',
+    description: 'Aslan, Afrika savanalarında yaşayan güçlü bir yırtıcıdır. "Ormanın kralı" olarak bilinir.',
+    habitat: 'Afrika Savanası',
+    diet: 'Et yiyen (Etçil)',
+    targetName: 'aslan_sayfasi',
+    targetImage: require('../../assets/targets/page1_aslan.jpg'),
+    model: require('../../assets/models/aslan.glb'),
+    sound: require('../../assets/sounds/aslan.mp3'),
+    physicalWidth: 0.148,
+    modelScale: [0.08, 0.08, 0.08],
+    modelPosition: [0, 0.05, 0],
+    modelRotation: [-90, 0, 0],
+  },
+  {
+    id: 'fil',
+    name: 'Fil',
+    englishName: 'Elephant',
+    emoji: '🐘',
+    pageNumber: 2,
+    color: '#8e9eab',
+    description: 'Fil, karadaki en büyük memeli hayvandır. Uzun hortumunu su içmek ve nesneleri taşımak için kullanır.',
+    habitat: 'Afrika ve Asya Ormanları',
+    diet: 'Bitki yiyen (Otçul)',
+    targetName: 'fil_sayfasi',
+    targetImage: require('../../assets/targets/page2_fil.jpg'),
+    model: require('../../assets/models/fil.glb'),
+    sound: require('../../assets/sounds/fil.mp3'),
+    physicalWidth: 0.148,
+    modelScale: [0.06, 0.06, 0.06],
+    modelPosition: [0, 0.05, 0],
+    modelRotation: [-90, 0, 0],
+  },
+  {
+    id: 'kaplan',
+    name: 'Kaplan',
+    englishName: 'Tiger',
+    emoji: '🐯',
+    pageNumber: 3,
+    color: '#ff6b35',
+    description: 'Kaplan, kedilerin en büyüğüdür. Karakteristik çizgileri her bireyde farklıdır, tıpkı parmak izi gibi.',
+    habitat: 'Asya Ormanları',
+    diet: 'Et yiyen (Etçil)',
+    targetName: 'kaplan_sayfasi',
+    targetImage: require('../../assets/targets/page3_kaplan.jpg'),
+    model: require('../../assets/models/kaplan.glb'),
+    sound: require('../../assets/sounds/kaplan.mp3'),
+    physicalWidth: 0.148,
+    modelScale: [0.08, 0.08, 0.08],
+    modelPosition: [0, 0.05, 0],
+    modelRotation: [-90, 0, 0],
+  },
+  {
+    id: 'zurafa',
+    name: 'Zürafa',
+    englishName: 'Giraffe',
+    emoji: '🦒',
+    pageNumber: 4,
+    color: '#d4a017',
+    description: 'Zürafa, dünyanın en uzun boylu hayvanıdır. Uzun boynu sayesinde yüksek ağaç yapraklarına ulaşabilir.',
+    habitat: 'Afrika Savanası',
+    diet: 'Bitki yiyen (Otçul)',
+    targetName: 'zurafa_sayfasi',
+    targetImage: require('../../assets/targets/page4_zurafa.jpg'),
+    model: require('../../assets/models/zurafa.glb'),
+    sound: require('../../assets/sounds/zurafa.mp3'),
+    physicalWidth: 0.148,
+    modelScale: [0.05, 0.05, 0.05],
+    modelPosition: [0, 0.08, 0],
+    modelRotation: [-90, 0, 0],
+  },
+  {
+    id: 'penguen',
+    name: 'Penguen',
+    englishName: 'Penguin',
+    emoji: '🐧',
+    pageNumber: 5,
+    color: '#4a90d9',
+    description: 'Penguen, uçamayan ama mükemmel yüzücü olan bir kuştur. Antarktika\'nın soğuğuna uyum sağlamıştır.',
+    habitat: 'Antarktika',
+    diet: 'Balık yiyen',
+    targetName: 'penguen_sayfasi',
+    targetImage: require('../../assets/targets/page5_penguen.jpg'),
+    model: require('../../assets/models/penguen.glb'),
+    sound: require('../../assets/sounds/penguen.mp3'),
+    physicalWidth: 0.148,
+    modelScale: [0.1, 0.1, 0.1],
+    modelPosition: [0, 0.05, 0],
+    modelRotation: [-90, 0, 0],
+  },
+];
+
+export const getAnimalById = (id) => ANIMALS.find((a) => a.id === id);
+export const getAnimalByTarget = (targetName) =>
+  ANIMALS.find((a) => a.targetName === targetName);
