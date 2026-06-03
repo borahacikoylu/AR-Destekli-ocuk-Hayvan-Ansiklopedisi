@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.borahacikoylu.arhayvanansiklopedisi",
+      "bundleIdentifier": "com.borahacikoylu.arhayvanansiklopedisi2",
       "infoPlist": {
         "NSCameraUsageDescription": "AR deneyimi için kamera erişimi gereklidir.",
         "NSMicrophoneUsageDescription": "Bazı AR özellikleri için mikrofon gerekebilir."
@@ -33,6 +33,7 @@
       ]
     },
     "plugins": [
+      "@viro-community/react-viro",
       [
         "expo-av",
         {

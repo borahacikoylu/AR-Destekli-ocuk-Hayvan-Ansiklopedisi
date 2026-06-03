@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ViroARScene,
   ViroARImageMarker,
@@ -12,57 +12,36 @@ import {
 } from '@viro-community/react-viro';
 import { ANIMALS } from '../data/animals';
 
-/**
- * AR sahne bileşeni - ViroReact image tracking
- *
- * Her hayvan için bir ViroARImageMarker oluşturulur.
- * Kamera PDF sayfasını gördüğünde ilgili 3D model üstüne oturur.
- */
+// Modül düzeyinde kontrol — ViroReact sahneleri prop değişimini re-render
+// olarak almadığından bu pattern kullanılıyor.
+let _scanning = true;
+let _resetCallback = null;
 
-// Tüm hayvan sayfalarını hedef olarak kaydet
-ViroARTrackingTargets.createTargets(
-  ANIMALS.reduce((acc, animal) => {
-    acc[animal.targetName] = {
-      source: animal.targetImage,
-      orientation: 'Up',
-      physicalWidth: animal.physicalWidth,
-    };
-    return acc;
-  }, {})
-);
+export function pauseScanning() {
+  _scanning = false;
+}
 
-// Giriş animasyonu: model aşağıdan yavaşça yükselir
-ViroAnimations.registerAnimations({
-  appear: {
-    properties: { positionY: '+=0.03', opacity: 1 },
-    easing: 'EaseInEaseOut',
-    duration: 600,
-  },
-  idle_bounce: {
-    properties: { positionY: '+=0.01' },
-    easing: 'EaseInEaseOut',
-    duration: 1200,
-  },
-  idle_bounce_back: {
-    properties: { positionY: '-=0.01' },
-    easing: 'EaseInEaseOut',
-    duration: 1200,
-  },
-  bounce: [['idle_bounce', 'idle_bounce_back']],
-});
+export function resumeScanning() {
+  _resetCallback?.();
+}
 
-function AnimalMarker({ animal, onAnimalFound }) {
-  const [found, setFound] = useState(false);
+function AnimalMarker({ animal, isActive, onFound, onLost }) {
   const [modelLoaded, setModelLoaded] = useState(false);
+  const [position, setPosition]       = useState(animal.modelPosition);
 
-  const handleFound = useCallback(() => {
-    setFound(true);
-    onAnimalFound?.(animal);
-  }, [animal, onAnimalFound]);
+  const handleFound = useCallback(() => onFound(animal), [animal, onFound]);
+  const handleLost  = useCallback(() => onLost(animal),  [animal, onLost]);
 
-  const handleLost = useCallback(() => {
-    setFound(false);
-  }, []);
+  const prevActive = useRef(isActive);
+  if (prevActive.current !== isActive) {
+    prevActive.current = isActive;
+    if (!isActive) {
+      setModelLoaded(false);
+      setPosition(animal.modelPosition);
+    }
+  }
+
+  const visible = isActive && modelLoaded;
 
   return (
     <ViroARImageMarker
@@ -70,39 +49,33 @@ function AnimalMarker({ animal, onAnimalFound }) {
       onAnchorFound={handleFound}
       onAnchorRemoved={handleLost}
     >
-      {/* Ambient ışık - modeli her açıdan aydınlatır */}
-      <ViroAmbientLight color="#ffffff" intensity={400} />
-      <ViroDirectionalLight
-        color="#ffffff"
-        direction={[0, -1, -0.5]}
-        intensity={300}
-      />
+      <ViroAmbientLight color="#ffffff" intensity={500} />
+      <ViroDirectionalLight color="#ffffff" direction={[0, -1, -0.5]} intensity={300} />
 
       <ViroNode
-        position={animal.modelPosition}
-        scale={modelLoaded ? animal.modelScale : [0, 0, 0]}
+        position={position}
+        scale={visible ? animal.modelScale : [0, 0, 0]}
         rotation={animal.modelRotation}
-        opacity={modelLoaded ? 1 : 0}
-        animation={
-          modelLoaded
-            ? { name: 'bounce', run: true, loop: true }
-            : undefined
-        }
+        opacity={visible ? 1 : 0}
+        dragType="FixedDistance"
+        onDrag={(dragToPos) => setPosition(dragToPos)}
+        animation={visible ? { name: 'bounce', run: true, loop: true } : undefined}
       >
-        <Viro3DObject
-          source={animal.model}
-          type="GLB"
-          onLoadEnd={() => setModelLoaded(true)}
-          onError={(e) => console.warn(`Model yüklenemedi (${animal.name}):`, e)}
-        />
+        {isActive && (
+          <Viro3DObject
+            source={animal.model}
+            type="GLB"
+            onLoadEnd={() => setModelLoaded(true)}
+            onError={(e) => console.warn(`Model yüklenemedi (${animal.name}):`, e)}
+          />
+        )}
       </ViroNode>
 
-      {/* Hayvan adı etiketi */}
-      {modelLoaded && (
+      {visible && (
         <ViroText
           text={`${animal.emoji} ${animal.name}`}
-          scale={[0.05, 0.05, 0.05]}
-          position={[0, 0.18, 0]}
+          scale={[0.04, 0.04, 0.04]}
+          position={[0, 0.12, 0]}
           style={{ fontFamily: 'Arial', fontSize: 20, color: '#ffffff' }}
           outerStroke={{ type: 'Outline', width: 2, color: '#1a1a2e' }}
         />
@@ -111,9 +84,84 @@ function AnimalMarker({ animal, onAnimalFound }) {
   );
 }
 
-// ViroReact sahne bileşenleri props'u sceneNavigator üzerinden alır
 export default function ARAnimalScene({ sceneNavigator }) {
-  const onAnimalFound = sceneNavigator?.viroAppProps?.onAnimalFound;
+  const initialized = useRef(false);
+  if (!initialized.current) {
+    initialized.current = true;
+    ViroARTrackingTargets.createTargets(
+      ANIMALS.reduce((acc, animal) => {
+        acc[animal.targetName] = {
+          source: animal.targetImage,
+          orientation: 'Up',
+          physicalWidth: animal.physicalWidth,
+        };
+        return acc;
+      }, {})
+    );
+    ViroAnimations.registerAnimations({
+      idle_bounce:      { properties: { positionY: '+=0.008' }, easing: 'EaseInEaseOut', duration: 1000 },
+      idle_bounce_back: { properties: { positionY: '-=0.008' }, easing: 'EaseInEaseOut', duration: 1000 },
+      bounce: [['idle_bounce', 'idle_bounce_back']],
+    });
+  }
+
+  const { onAnimalFound, onAnimalLost } = sceneNavigator?.viroAppProps ?? {};
+
+  const [activeAnimalId, setActiveAnimalId] = useState(null);
+  const candidatesRef  = useRef(new Set());
+  const checkTimerRef  = useRef(null);
+  const graceTimerRef  = useRef(null);
+
+  useEffect(() => {
+    _resetCallback = () => {
+      // Önce taramayı kapat; ARKit önceki anchor'ları hemen raporlayabiliyor
+      _scanning = false;
+      setActiveAnimalId(null);
+      candidatesRef.current.clear();
+      if (checkTimerRef.current)  { clearTimeout(checkTimerRef.current);  checkTimerRef.current  = null; }
+      if (graceTimerRef.current)  { clearTimeout(graceTimerRef.current);  graceTimerRef.current  = null; }
+      // 600ms sonra taramayı aç — ARKit'in stale anchor burst'i bu sürede geçiyor
+      graceTimerRef.current = setTimeout(() => {
+        graceTimerRef.current = null;
+        _scanning = true;
+      }, 600);
+    };
+    return () => { _resetCallback = null; };
+  }, []);
+
+  const scheduleCheck = useCallback(() => {
+    if (checkTimerRef.current) return;
+    checkTimerRef.current = setTimeout(() => {
+      checkTimerRef.current = null;
+      const surviving = [...candidatesRef.current];
+      if (surviving.length > 0) {
+        const winner = ANIMALS.find(a => surviving.includes(a.id));
+        if (winner) {
+          setActiveAnimalId(winner.id);
+          onAnimalFound?.(winner);
+        }
+      }
+      candidatesRef.current.clear();
+    }, 700);
+  }, [onAnimalFound]);
+
+  const handleFound = useCallback((animal) => {
+    if (!_scanning) return;
+    candidatesRef.current.add(animal.id);
+    scheduleCheck();
+  }, [scheduleCheck]);
+
+  const handleLost = useCallback((animal) => {
+    candidatesRef.current.delete(animal.id);
+    if (!_scanning) return;
+    setActiveAnimalId(prev => {
+      if (prev === animal.id) {
+        onAnimalLost?.();
+        return null;
+      }
+      return prev;
+    });
+  }, [onAnimalLost]);
 
   return (
     <ViroARScene>
@@ -121,7 +169,9 @@ export default function ARAnimalScene({ sceneNavigator }) {
         <AnimalMarker
           key={animal.id}
           animal={animal}
-          onAnimalFound={onAnimalFound}
+          isActive={activeAnimalId === animal.id}
+          onFound={handleFound}
+          onLost={handleLost}
         />
       ))}
     </ViroARScene>

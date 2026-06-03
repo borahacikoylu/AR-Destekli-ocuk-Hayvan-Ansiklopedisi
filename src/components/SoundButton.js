@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   TouchableOpacity,
   StyleSheet,
@@ -10,13 +10,26 @@ import { Audio } from 'expo-av';
 export default function SoundButton({ soundFile, size = 60, style }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
-  const soundRef = React.useRef(null);
+  const scaleAnim  = useRef(new Animated.Value(1)).current;
+  const soundRef   = useRef(null);
+  const mountedRef = useRef(true); // unmount sonrası state güncelleme önlemek için
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Unmount olduğunda sesi sessizce temizle — AbortError fırlatmadan
+      soundRef.current?.stopAsync().catch(() => {}).finally(() => {
+        soundRef.current?.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      });
+    };
+  }, []);
 
   const pulse = () => {
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1,   duration: 100, useNativeDriver: true }),
     ]).start();
   };
 
@@ -24,46 +37,53 @@ export default function SoundButton({ soundFile, size = 60, style }) {
     if (isLoading) return;
 
     try {
+      // Önceki sesi durdur ve temizle
       if (soundRef.current) {
-        await soundRef.current.unloadAsync();
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
       }
 
       if (isPlaying) {
-        setIsPlaying(false);
+        if (mountedRef.current) setIsPlaying(false);
         return;
       }
 
-      setIsLoading(true);
+      if (mountedRef.current) setIsLoading(true);
       pulse();
 
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.loadAsync(soundFile);
+      const { sound } = await Audio.Sound.createAsync(soundFile);
+
+      // Yükleme biterken unmount olduysa temizle
+      if (!mountedRef.current) {
+        sound.unloadAsync().catch(() => {});
+        return;
+      }
+
       soundRef.current = sound;
 
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
-          setIsPlaying(false);
-          sound.unloadAsync();
-          soundRef.current = null;
+          if (mountedRef.current) setIsPlaying(false);
+          sound.unloadAsync().catch(() => {});
+          if (soundRef.current === sound) soundRef.current = null;
         }
       });
 
-      setIsLoading(false);
-      setIsPlaying(true);
+      if (mountedRef.current) {
+        setIsLoading(false);
+        setIsPlaying(true);
+      }
       await sound.playAsync();
     } catch (error) {
-      console.warn('Ses çalınamadı:', error);
-      setIsLoading(false);
-      setIsPlaying(false);
+      // AbortError ve diğer iptal hatalarını sessizce geç
+      if (mountedRef.current) {
+        setIsLoading(false);
+        setIsPlaying(false);
+      }
     }
   }, [isPlaying, isLoading, soundFile]);
-
-  React.useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>

@@ -1,16 +1,3 @@
-/**
- * Hayvan veritabanı
- *
- * Her hayvan için:
- *   - targetImage: assets/targets/ klasöründeki PDF sayfa fotoğrafı
- *   - model: assets/models/ klasöründeki .glb 3D model
- *   - sound: assets/sounds/ klasöründeki .mp3 ses dosyası
- *   - physicalWidth: Hedef görüntünün gerçek genişliği (metre cinsinden)
- *     A5 sayfa = 0.148, A4 sayfa = 0.21
- *
- * Dosyaları koyma rehberi → SETUP.md
- */
-
 export const ANIMALS = [
   {
     id: 'aslan',
@@ -27,8 +14,8 @@ export const ANIMALS = [
     model: require('../../assets/models/aslan.glb'),
     sound: require('../../assets/sounds/aslan.mp3'),
     physicalWidth: 0.148,
-    modelScale: [0.08, 0.08, 0.08],
-    modelPosition: [0, 0.05, 0],
+    modelScale: [0.008, 0.008, 0.008],
+    modelPosition: [0, 0.02, 0],
     modelRotation: [-90, 0, 0],
   },
   {
@@ -46,8 +33,8 @@ export const ANIMALS = [
     model: require('../../assets/models/fil.glb'),
     sound: require('../../assets/sounds/fil.mp3'),
     physicalWidth: 0.148,
-    modelScale: [0.06, 0.06, 0.06],
-    modelPosition: [0, 0.05, 0],
+    modelScale: [0.006, 0.006, 0.006],
+    modelPosition: [0, 0.02, 0],
     modelRotation: [-90, 0, 0],
   },
   {
@@ -65,8 +52,8 @@ export const ANIMALS = [
     model: require('../../assets/models/kaplan.glb'),
     sound: require('../../assets/sounds/kaplan.mp3'),
     physicalWidth: 0.148,
-    modelScale: [0.08, 0.08, 0.08],
-    modelPosition: [0, 0.05, 0],
+    modelScale: [0.008, 0.008, 0.008],
+    modelPosition: [0, 0.02, 0],
     modelRotation: [-90, 0, 0],
   },
   {
@@ -84,8 +71,8 @@ export const ANIMALS = [
     model: require('../../assets/models/zurafa.glb'),
     sound: require('../../assets/sounds/zurafa.mp3'),
     physicalWidth: 0.148,
-    modelScale: [0.05, 0.05, 0.05],
-    modelPosition: [0, 0.08, 0],
+    modelScale: [0.005, 0.005, 0.005],
+    modelPosition: [0, 0.03, 0],
     modelRotation: [-90, 0, 0],
   },
   {
@@ -95,7 +82,7 @@ export const ANIMALS = [
     emoji: '🐧',
     pageNumber: 5,
     color: '#4a90d9',
-    description: 'Penguen, uçamayan ama mükemmel yüzücü olan bir kuştur. Antarktika\'nın soğuğuna uyum sağlamıştır.',
+    description: "Penguen, uçamayan ama mükemmel yüzücü olan bir kuştur. Antarktika'nın soğuğuna uyum sağlamıştır.",
     habitat: 'Antarktika',
     diet: 'Balık yiyen',
     targetName: 'penguen_sayfasi',
@@ -103,12 +90,11 @@ export const ANIMALS = [
     model: require('../../assets/models/penguen.glb'),
     sound: require('../../assets/sounds/penguen.mp3'),
     physicalWidth: 0.148,
-    modelScale: [0.1, 0.1, 0.1],
-    modelPosition: [0, 0.05, 0],
+    modelScale: [0.01, 0.01, 0.01],
+    modelPosition: [0, 0.02, 0],
     modelRotation: [-90, 0, 0],
   },
 ];
 
 export const getAnimalById = (id) => ANIMALS.find((a) => a.id === id);
-export const getAnimalByTarget = (targetName) =>
-  ANIMALS.find((a) => a.targetName === targetName);
+export const getAnimalByTarget = (targetName) => ANIMALS.find((a) => a.targetName === targetName);

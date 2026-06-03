@@ -1,24 +1,26 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Platform,
 } from 'react-native';
 import { ViroARSceneNavigator } from '@viro-community/react-viro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ARAnimalScene from '../components/ARAnimalScene';
+import ARAnimalScene, { pauseScanning, resumeScanning } from '../components/ARAnimalScene';
 import SoundButton from '../components/SoundButton';
+
 
 export default function ScanScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [detectedAnimal, setDetectedAnimal] = useState(null);
-  const cardAnim = React.useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
 
   const handleAnimalFound = useCallback((animal) => {
+    pauseScanning(); // artık yeni sayfa taranmasın
     setDetectedAnimal(animal);
+    cardAnim.setValue(0);
     Animated.spring(cardAnim, {
       toValue: 1,
       useNativeDriver: true,
@@ -27,41 +29,53 @@ export default function ScanScreen({ navigation }) {
     }).start();
   }, [cardAnim]);
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
+  const handleAnimalLost = useCallback(() => {
+    // tarama duraklatıldığında bu callback zaten ARAnimalScene'den gelmiyor
+    // ama gelirse popup'ı kaldır
+    Animated.timing(cardAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => setDetectedAnimal(null));
+  }, [cardAnim]);
+
+  const handleNewScan = useCallback(() => {
+    // Önce kartı animasyonla kapat, sonra state'i temizle
+    Animated.timing(cardAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setDetectedAnimal(null);
+      resumeScanning();
+    });
+  }, [cardAnim]);
 
   return (
     <View style={styles.container}>
-      {/* AR Kamera + 3D Sahne */}
       <ViroARSceneNavigator
         autofocus
         initialScene={{ scene: ARAnimalScene }}
-        viroAppProps={{ onAnimalFound: handleAnimalFound }}
+        viroAppProps={{ onAnimalFound: handleAnimalFound, onAnimalLost: handleAnimalLost }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Geri Butonu */}
       <TouchableOpacity
         style={[styles.backButton, { top: insets.top + 12 }]}
-        onPress={handleBack}
+        onPress={() => navigation.goBack()}
       >
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
 
-      {/* Tarama İpucu - hayvan bulunmadığında göster */}
       {!detectedAnimal && (
         <View style={styles.hintContainer}>
           <View style={styles.hintBox}>
             <Text style={styles.hintIcon}>📖</Text>
-            <Text style={styles.hintText}>
-              Kitabın bir sayfasını kameraya tut
-            </Text>
+            <Text style={styles.hintText}>Kitabın bir sayfasını kameraya tut</Text>
           </View>
         </View>
       )}
 
-      {/* Hayvan Bilgi Kartı - hayvan bulununca çıkar */}
       {detectedAnimal && (
         <Animated.View
           style={[
@@ -85,15 +99,19 @@ export default function ScanScreen({ navigation }) {
             <Text style={styles.cardEmoji}>{detectedAnimal.emoji}</Text>
             <View style={styles.cardText}>
               <Text style={styles.cardName}>{detectedAnimal.name}</Text>
-              <Text style={styles.cardHabitat}>{detectedAnimal.habitat}</Text>
-              <Text style={styles.cardDiet}>{detectedAnimal.diet}</Text>
+              <Text style={styles.cardSub}>{detectedAnimal.habitat}</Text>
+              <Text style={styles.cardSub}>{detectedAnimal.diet}</Text>
             </View>
             <SoundButton soundFile={detectedAnimal.sound} size={54} />
           </View>
-
           <Text style={styles.cardDescription} numberOfLines={2}>
             {detectedAnimal.description}
           </Text>
+
+          <TouchableOpacity style={styles.newScanButton} onPress={handleNewScan}>
+            <Text style={styles.newScanIcon}>📷</Text>
+            <Text style={styles.newScanText}>Yeni Hayvan Tara</Text>
+          </TouchableOpacity>
         </Animated.View>
       )}
     </View>
@@ -101,10 +119,7 @@ export default function ScanScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
+  container: { flex: 1, backgroundColor: '#000' },
   backButton: {
     position: 'absolute',
     left: 16,
@@ -115,11 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backIcon: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '600',
-  },
+  backIcon: { color: '#fff', fontSize: 20, fontWeight: '600' },
   hintContainer: {
     position: 'absolute',
     bottom: 120,
@@ -138,14 +149,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
-  hintIcon: {
-    fontSize: 22,
-  },
-  hintText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  hintIcon: { fontSize: 22 },
+  hintText: { color: '#fff', fontSize: 14, fontWeight: '500' },
   animalCard: {
     position: 'absolute',
     left: 16,
@@ -159,41 +164,35 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
   },
-  cardAccent: {
-    height: 4,
-  },
+  cardAccent: { height: 4 },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     gap: 12,
   },
-  cardEmoji: {
-    fontSize: 42,
-  },
-  cardText: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  cardHabitat: {
-    fontSize: 13,
-    color: '#8899aa',
-    marginTop: 2,
-  },
-  cardDiet: {
-    fontSize: 12,
-    color: '#8899aa',
-    marginTop: 1,
-  },
+  cardEmoji: { fontSize: 42 },
+  cardText: { flex: 1 },
+  cardName: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  cardSub: { fontSize: 12, color: '#8899aa', marginTop: 2 },
   cardDescription: {
     fontSize: 13,
     color: '#aabbcc',
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 12,
     lineHeight: 19,
   },
+  newScanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#e94560',
+  },
+  newScanIcon: { fontSize: 18 },
+  newScanText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
