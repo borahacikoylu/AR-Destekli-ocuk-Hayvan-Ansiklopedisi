@@ -12,17 +12,12 @@ import {
 } from '@viro-community/react-viro';
 import { ANIMALS } from '../data/animals';
 
-// Modül düzeyinde kontrol — ViroReact sahneleri prop değişimini re-render
-// olarak almadığından bu pattern kullanılıyor.
+// Hayvan bulununca yeni taramayı durdurur; ScanScreen navigation.replace ile
+// ekranı yeniden mount edince _scanning otomatik true'ya döner.
 let _scanning = true;
-let _resetCallback = null;
 
 export function pauseScanning() {
   _scanning = false;
-}
-
-export function resumeScanning() {
-  _resetCallback?.();
 }
 
 function AnimalMarker({ animal, isActive, onFound, onLost }) {
@@ -105,29 +100,17 @@ export default function ARAnimalScene({ sceneNavigator }) {
     });
   }
 
+  // navigation.replace ile ekran yeniden mount edilince _scanning'i sıfırla
+  useEffect(() => {
+    _scanning = true;
+    return () => { _scanning = true; };
+  }, []);
+
   const { onAnimalFound, onAnimalLost } = sceneNavigator?.viroAppProps ?? {};
 
   const [activeAnimalId, setActiveAnimalId] = useState(null);
-  const candidatesRef  = useRef(new Set());
-  const checkTimerRef  = useRef(null);
-  const graceTimerRef  = useRef(null);
-
-  useEffect(() => {
-    _resetCallback = () => {
-      // Önce taramayı kapat; ARKit önceki anchor'ları hemen raporlayabiliyor
-      _scanning = false;
-      setActiveAnimalId(null);
-      candidatesRef.current.clear();
-      if (checkTimerRef.current)  { clearTimeout(checkTimerRef.current);  checkTimerRef.current  = null; }
-      if (graceTimerRef.current)  { clearTimeout(graceTimerRef.current);  graceTimerRef.current  = null; }
-      // 600ms sonra taramayı aç — ARKit'in stale anchor burst'i bu sürede geçiyor
-      graceTimerRef.current = setTimeout(() => {
-        graceTimerRef.current = null;
-        _scanning = true;
-      }, 600);
-    };
-    return () => { _resetCallback = null; };
-  }, []);
+  const candidatesRef = useRef(new Set());
+  const checkTimerRef = useRef(null);
 
   const scheduleCheck = useCallback(() => {
     if (checkTimerRef.current) return;

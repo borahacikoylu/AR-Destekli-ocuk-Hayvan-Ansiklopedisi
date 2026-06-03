@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { ViroARSceneNavigator } from '@viro-community/react-viro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ARAnimalScene, { pauseScanning, resumeScanning } from '../components/ARAnimalScene';
+import ARAnimalScene, { pauseScanning } from '../components/ARAnimalScene';
 import SoundButton from '../components/SoundButton';
 
 
@@ -18,7 +18,7 @@ export default function ScanScreen({ navigation }) {
   const cardAnim = useRef(new Animated.Value(0)).current;
 
   const handleAnimalFound = useCallback((animal) => {
-    pauseScanning(); // artık yeni sayfa taranmasın
+    pauseScanning();
     setDetectedAnimal(animal);
     cardAnim.setValue(0);
     Animated.spring(cardAnim, {
@@ -30,8 +30,6 @@ export default function ScanScreen({ navigation }) {
   }, [cardAnim]);
 
   const handleAnimalLost = useCallback(() => {
-    // tarama duraklatıldığında bu callback zaten ARAnimalScene'den gelmiyor
-    // ama gelirse popup'ı kaldır
     Animated.timing(cardAnim, {
       toValue: 0,
       duration: 200,
@@ -40,16 +38,14 @@ export default function ScanScreen({ navigation }) {
   }, [cardAnim]);
 
   const handleNewScan = useCallback(() => {
-    // Önce kartı animasyonla kapat, sonra state'i temizle
+    // Kartı kapat, sonra ekranı sıfırdan yükle —
+    // bu ViroARSceneNavigator'ı ve ARKit anchor hafızasını tamamen temizler.
     Animated.timing(cardAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
-    }).start(() => {
-      setDetectedAnimal(null);
-      resumeScanning();
-    });
-  }, [cardAnim]);
+    }).start(() => navigation.replace('Scan'));
+  }, [cardAnim, navigation]);
 
   return (
     <View style={styles.container}>
