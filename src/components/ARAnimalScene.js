@@ -12,6 +12,8 @@ import {
 } from '@viro-community/react-viro';
 import { ANIMALS } from '../data/animals';
 
+const MATCH_CONFIRM_DELAY_MS = 250;
+
 // Hayvan bulununca yeni taramayı durdurur; ScanScreen navigation.replace ile
 // ekranı yeniden mount edince _scanning otomatik true'ya döner.
 let _scanning = true;
@@ -109,42 +111,57 @@ export default function ARAnimalScene({ sceneNavigator }) {
   const { onAnimalFound, onAnimalLost } = sceneNavigator?.viroAppProps ?? {};
 
   const [activeAnimalId, setActiveAnimalId] = useState(null);
-  const candidatesRef = useRef(new Set());
-  const checkTimerRef = useRef(null);
+  const activeAnimalRef = useRef(null);
+  const pendingAnimalRef = useRef(null);
+  const confirmTimerRef = useRef(null);
 
-  const scheduleCheck = useCallback(() => {
-    if (checkTimerRef.current) return;
-    checkTimerRef.current = setTimeout(() => {
-      checkTimerRef.current = null;
-      const surviving = [...candidatesRef.current];
-      if (surviving.length > 0) {
-        const winner = ANIMALS.find(a => surviving.includes(a.id));
-        if (winner) {
-          setActiveAnimalId(winner.id);
-          onAnimalFound?.(winner);
-        }
-      }
-      candidatesRef.current.clear();
-    }, 700);
+  const clearConfirmTimer = useCallback(() => {
+    if (confirmTimerRef.current) {
+      clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = null;
+    }
+  }, []);
+
+  const confirmAnimal = useCallback((animal) => {
+    if (!_scanning || activeAnimalRef.current) return;
+    activeAnimalRef.current = animal.id;
+    setActiveAnimalId(animal.id);
+    onAnimalFound?.(animal);
   }, [onAnimalFound]);
 
   const handleFound = useCallback((animal) => {
-    if (!_scanning) return;
-    candidatesRef.current.add(animal.id);
-    scheduleCheck();
-  }, [scheduleCheck]);
+    if (!_scanning || activeAnimalRef.current) return;
+    pendingAnimalRef.current = animal;
+    clearConfirmTimer();
+    confirmTimerRef.current = setTimeout(() => {
+      confirmTimerRef.current = null;
+      const pendingAnimal = pendingAnimalRef.current;
+      pendingAnimalRef.current = null;
+      if (pendingAnimal) {
+        confirmAnimal(pendingAnimal);
+      }
+    }, MATCH_CONFIRM_DELAY_MS);
+  }, [clearConfirmTimer, confirmAnimal]);
 
   const handleLost = useCallback((animal) => {
-    candidatesRef.current.delete(animal.id);
+    if (pendingAnimalRef.current?.id === animal.id) {
+      pendingAnimalRef.current = null;
+      clearConfirmTimer();
+    }
     if (!_scanning) return;
     setActiveAnimalId(prev => {
       if (prev === animal.id) {
+        activeAnimalRef.current = null;
         onAnimalLost?.();
         return null;
       }
       return prev;
     });
-  }, [onAnimalLost]);
+  }, [clearConfirmTimer, onAnimalLost]);
+
+  useEffect(() => {
+    return () => clearConfirmTimer();
+  }, [clearConfirmTimer]);
 
   return (
     <ViroARScene>

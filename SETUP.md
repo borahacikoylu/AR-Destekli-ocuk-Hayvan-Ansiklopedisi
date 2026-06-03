@@ -14,7 +14,7 @@ PDF Sayfası ──► Kamera ──► ARKit Image Tracking ──► 3D Model 
 
 ### 2a. Hedef Görüntüler — `assets/targets/`
 
-Her PDF sayfası için yüksek kaliteli bir fotoğraf/ekran görüntüsü.
+Her PDF sayfası için yüksek kaliteli bir fotoğraf/ekran görüntüsü. AR eşleştirme ise ortak sayfa kenarlıkları yerine `assets/targets/markers/` içindeki başlık + ana görsel kırpımlarını kullanır.
 
 | Dosya Adı | Hangi Sayfa |
 |---|---|
@@ -26,6 +26,7 @@ Her PDF sayfası için yüksek kaliteli bir fotoğraf/ekran görüntüsü.
 
 **İpuçları:**
 - En az **300x400 px** çözünürlük
+- Marker kırpımı sayfaya özel başlık ve ana görseli içersin; ortak kenarlık/şablon mümkün olduğunca dışarıda kalsın
 - Sayfada **renkli ve belirgin** bir tasarım olsun (düz beyaz üzerine metin ise ARKit zorlanır)
 - PDF'ten direkt export et ya da düz yüzeyde fotoğrafla
 
@@ -131,10 +132,10 @@ npx expo run:ios
   habitat: 'Okyanuslar',
   diet: 'Etçil',
   targetName: 'kopek_baligi_sayfasi',
-  targetImage: require('../../assets/targets/page6_kopek_baligi.jpg'),
+  targetImage: require('../../assets/targets/markers/page6_kopek_baligi_marker.jpg'),
   model: require('../../assets/models/kopek_baligi.glb'),
   sound: require('../../assets/sounds/kopek_baligi.mp3'),
-  physicalWidth: 0.148,        // A5 = 0.148, A4 = 0.21
+  physicalWidth: 0.094,        // Marker kırpımının fiziksel genişliği
   modelScale: [0.08, 0.08, 0.08],
   modelPosition: [0, 0.05, 0],
   modelRotation: [-90, 0, 0],
@@ -148,7 +149,7 @@ npx expo run:ios
 ```
 ar-hayvan-ansiklopedisi/
 ├── assets/
-│   ├── targets/        ← PDF sayfası fotoğrafları (.jpg)
+│   ├── targets/        ← PDF sayfası fotoğrafları ve marker kırpımları (.jpg)
 │   ├── models/         ← 3D modeller (.glb)
 │   └── sounds/         ← Ses dosyaları (.mp3)
 ├── src/
